@@ -1,32 +1,32 @@
-import Data.List
+import Data.List as List
+import Data.Set (Set)
+import qualified Data.Set as Set
 import Util
+import Control.Monad.Cont
+import System.Exit
 
-has n = length . filter (exactly n)
+has n = length . filter (elem n . map length . group . sort)
 
-exactly n xs = n `elem` lengths xs
+diffByOne xs ys = (==1) . howManyTrue $ zipWith (/=) xs ys
 
-lengths = map length . group . sort
-
-diffByOne = uncurry $ differentByOne 0
-
-differentByOne :: Int -> String -> String -> Bool
-differentByOne 1 [] [] = True
-differentByOne i _ _
-  | i > 1 = False
-differentByOne i (x:xs) (y:ys)=
-  if x /= y
-    then differentByOne (i+1) xs ys
-    else differentByOne i xs ys
-differentByOne _ _ _ = False
-
-sameChars [] [] = ""
-sameChars (x:xs) (y:ys) =
-  (if x == y then (x:) else id) $ sameChars xs ys
+sameChars xs ys = map fst . filter (uncurry (==)) $ zip xs ys
 
 main = do
   input <- getInput "02"
-  
   print $ has 2 input * has 3 input -- *1
 
-  putStrLn . uncurry sameChars . head .
-    filter diffByOne $ pairs input input -- *2
+  -- This is a slower-running way to do part 2 (original solution)
+  -- putStrLn . uncurry sameChars . head . filter (uncurry diffByOne) $ pairs input input
+
+  let len = length $ head input
+  mapM_ (check Set.empty input) [0..len]
+
+check :: Set String -> [String] -> Int -> IO ()
+check _ [] _ = return ()
+check seen (x:xs) i = do
+  let (a, b) = List.splitAt i x
+  let spliced = a ++ tail b
+  when (spliced `Set.member` seen) $ do
+    liftIO $ putStrLn spliced -- *2
+    exitSuccess
+  check (Set.insert spliced seen) xs i

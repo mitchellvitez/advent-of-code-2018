@@ -1,9 +1,11 @@
 module Util where
 
-pairs xs ys = [(x, y) | x <- xs, y <- ys]
+import Data.List (tails)
 
-pairsExcludeSame xs ys = [(x, y) | x <- xs, y <- ys, x /= y]
+pairs xs ys = [ (x, y) | (x:rest) <- tails xs, y <- rest ]
 
 getInput s = do
   f <- readFile $ "input/" ++ s ++ ".txt"
   return $ lines f
+
+howManyTrue = length . filter (==True)

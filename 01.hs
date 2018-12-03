@@ -9,7 +9,6 @@ readInt :: String -> Int
 readInt x = read $ if head x == '+' then tail x else x
 
 firstDuplicate :: [Int] -> Int -> IntSet -> Int
-firstDuplicate [] _ _ = error "No duplicate found"
 firstDuplicate (x:xs) current seen = 
   if current `IntSet.member` seen
   then current
