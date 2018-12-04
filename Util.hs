@@ -8,4 +8,7 @@ getInput s = do
   f <- readFile $ "input/" ++ s ++ ".txt"
   return $ lines f
 
+getParseInput s =
+  readFile $ "input/" ++ s ++ ".txt"
+
 howManyTrue = length . filter (==True)

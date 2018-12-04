@@ -10,30 +10,35 @@ import Data.IntMap.Strict (IntMap)
 import qualified Data.IntMap.Strict as IntMap
 import Data.Ord
 import Control.Lens
+import Data.Biapplicative
 
-data Action = WakeUp | FallAsleep | BeginShift Int
+type GuardId = Int
+type Minute = Int
+
+data Action = WakeUp | FallAsleep | BeginShift GuardId
   deriving (Eq, Ord, Show)
 
-type GuardData = (Int, [Int])
+type GuardData = (Minute, [Minute])
 
 data Entry = Entry
-  { _minute :: Int
+  { _key :: Int
+  , _minute :: Minute
   , _action :: Action
   }
   deriving (Eq, Ord, Show)
 makeLenses ''Entry
 
 data GuardInfo = GuardInfo
-  { _currentGuard :: Int
-  , _asleepAt :: Int
+  { _currentGuard :: GuardId
+  , _asleepAt :: Minute
   , _guardData :: IntMap GuardData
   }
 makeLenses ''GuardInfo
 
 main = do
-  input <- Util.getInput "04"
+  input <- Util.getParseInput "04"
 
-  let entries = fromRight [] $ (parse (many parseInput) "") $ unlines $ sort input
+  let entries = sort . fromRight [] . (parse (many parseInput) "") $ input
   let defaultInfo = GuardInfo 0 0 IntMap.empty
   let minutes = IntMap.toList . view guardData $ foldl' countMinutes defaultInfo entries
 
@@ -42,7 +47,7 @@ main = do
 
 printAnswer comparison = print . toAnswer . maximumBy (comparing comparison)
 
-toAnswer (guard, (_, list)) = (guard*) . head $ mostCommonMinute list
+toAnswer (guard, (_, minutes)) = (guard*) . head $ mostCommonMinute minutes
 
 mostCommonMinute = maximumBy (comparing length) . group . sort
 
@@ -56,24 +61,26 @@ countMinutes info entry =
       info & asleepAt .~ entry ^. minute
 
     WakeUp ->
-      info & guardData .~
-        IntMap.insertWith addStuff (info ^. currentGuard) guardDatum (info ^. guardData) 
-      where min = entry ^. minute
-            asleep = info ^. asleepAt
-            guardDatum = (min - asleep, [asleep..min-1])
-
-addStuff :: GuardData -> GuardData -> GuardData
-addStuff (m1, lst1) (m2, lst2) = (m1 + m2, lst1 ++ lst2)
+      info & guardData .~ IntMap.insertWith
+        (biliftA2 (+) (++))
+        (info ^. currentGuard)
+        (min - asleep, [asleep..min-1])
+        (info ^. guardData)
+      where
+        min = entry ^. minute
+        asleep = info ^. asleepAt
 
 parseInput :: Parser Entry
 parseInput = do
-  many (Parsec.noneOf ":")
-  char ':'
-  minute <- decimal
-  string "] "
-  info <- parseInfo
-  char '\n'
-  return $ Entry minute info
+  char '['
+  -- parse date to Int because sorting by comparing strings is slow
+  y <- decimal <* char '-'
+  m <- decimal <* char '-'
+  d <- decimal <* char ' '
+  h <- decimal <* char ':'
+  minute <- decimal <* string "] "
+  info <- parseInfo <* char '\n'
+  return $ Entry (1000000*y + 10000*m + 100*d + h) minute info
 
 parseInfo :: Parser Action
 parseInfo = do

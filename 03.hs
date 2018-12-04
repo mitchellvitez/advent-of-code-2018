@@ -21,9 +21,9 @@ data Claim = Claim
   deriving Show
 
 main = do
-  input <- Util.getInput "03"
+  input <- Util.getParseInput "03"
 
-  let claims = fromRight [] . parse (many parseClaim) "" . unlines $ input
+  let claims = fromRight [] $ parse (many parseClaim) "" input
   let grid = IntMap.filter (>1) $ fillup IntMap.empty claims
   let overlapped = IntSet.fromList $ IntMap.keys grid
 
@@ -59,6 +59,7 @@ parseClaim = do
   width <- decimal <* char 'x'
   height <- decimal <* char '\n'
   return $ Claim claimId fromLeft fromTop width height
+
 
 -- This version uses mutable data, but it turned out to be slower
 mutableVersion claims = do
