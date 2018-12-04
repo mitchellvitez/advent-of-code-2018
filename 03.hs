@@ -1,14 +1,15 @@
+{-# LANGUAGE TupleSections #-}
+
 import Util
 import Text.ParserCombinators.Parsec
 import Text.ParserCombinators.Parsec.Number (decimal)
 import Data.List
 import Data.Either (fromRight)
-import Data.Map.Strict (Map)
-import qualified Data.Map.Strict as Map
-import Data.Set (Set)
-import qualified Data.Set as Set
-
-type Grid = Map (Int, Int) Int
+import Data.IntMap.Strict (IntMap)
+import qualified Data.IntMap.Strict as IntMap
+import Data.IntSet (IntSet)
+import qualified Data.IntSet as IntSet
+import Data.Judy as J
 
 data Claim = Claim
   { claimId :: Int
@@ -22,40 +23,65 @@ data Claim = Claim
 main = do
   input <- Util.getInput "03"
 
-  let claims = fromRight [] . parse (many parseClaim) "" $ unlines input
-  let grid = Map.filter (>1) $ fillup Map.empty claims
-  let overlapped = Set.fromList $ Map.keys grid
+  let claims = fromRight [] . parse (many parseClaim) "" . unlines $ input
+  let grid = IntMap.filter (>1) $ fillup IntMap.empty claims
+  let overlapped = IntSet.fromList $ IntMap.keys grid
 
-  print $ Map.size grid -- *1
+  print $ IntMap.size grid -- *1
   print . claimId . head $ filter (noOverlap overlapped) claims -- *2
 
-noOverlap :: Set (Int, Int) -> Claim -> Bool
-noOverlap overlapped claim =
-  null . filter (`Set.member` overlapped) $ getIndices claim
+  -- mutableVersion claims
 
-getIndices :: Claim -> [(Int, Int)]
+noOverlap :: IntSet -> Claim -> Bool
+noOverlap overlapped claim =
+  Prelude.null . filter (`IntSet.member` overlapped) $ getIndices claim
+
+getIndices :: Claim -> [Int]
 getIndices c = do
   x <- [fromLeft c + 1 .. fromLeft c + width c]
   y <- [fromTop c + 1 .. fromTop c + height c]
-  return (x, y)
+  -- simple hash function so we can use IntMap Int instead of Map (Int, Int) Int
+  return $ 10000 * x + y
 
-fillup :: Grid -> [Claim] -> Grid
+fillup :: IntMap Int -> [Claim] -> IntMap Int
 fillup grid claims =
-  let claimOne grid k = Map.insertWith (+) k 1 grid
-      claimAll grid claim = foldl' claimOne grid (getIndices claim)
-  in foldl' claimAll grid claims
+  foldl' claimAll grid claims
+  where
+    claimAll grid claim =
+      IntMap.unionWith (+) grid . IntMap.fromList $ (,1) <$> getIndices claim
 
 parseClaim :: Parser Claim
 parseClaim = do
   char '#'
-  claimId <- decimal
-  string " @ "
-  fromLeft <- decimal
-  char ','
-  fromTop <- decimal
-  string ": "
-  width <- decimal
-  char 'x'
-  height <- decimal
-  char '\n'
+  claimId <- decimal <* string " @ "
+  fromLeft <- decimal <* char ','
+  fromTop <- decimal <* string ": "
+  width <- decimal <* char 'x'
+  height <- decimal <* char '\n'
   return $ Claim claimId fromLeft fromTop width height
+
+-- This version uses mutable data, but it turned out to be slower
+mutableVersion claims = do
+  mutGrid <- J.new :: IO (J.JudyL Int)
+
+  fillupJ mutGrid claims
+  grid <- J.freeze mutGrid
+  g <- toList grid
+  let g2 = filter (\(a,b) -> b > 1) g
+  let (keys, values) = unzip g2
+  let overlapped = IntSet.fromList $ map fromIntegral keys
+
+  print . length . filter (>1) $ values
+  print . claimId . head $ filter (noOverlap overlapped) claims
+
+fillupJ :: J.JudyL Int -> [Claim] -> IO ()
+fillupJ grid claims =
+  mapM_ (claimAll grid) claims
+
+claimAll :: J.JudyL Int -> Claim -> IO ()
+claimAll grid claim =
+  mapM_ (claimOne grid) (map fromIntegral (getIndices claim))
+
+claimOne :: J.JudyL Int -> Int -> IO ()
+claimOne grid k = do
+  J.insertWith (+) (fromIntegral k) 1 grid
