@@ -7,11 +7,11 @@ import System.Exit
 
 has n = length . filter (elem n . map length . group . sort)
 
-diffByOne xs ys = (==1) . length . filter (==True) $ zipWith (/=) xs ys
+-- diffByOne xs ys = (==1) . length . filter (==True) $ zipWith (/=) xs ys
 
-sameChars xs ys = map fst . filter (uncurry (==)) $ zip xs ys
+-- sameChars xs ys = map fst . filter (uncurry (==)) $ zip xs ys
 
-pairs xs ys = [ (x, y) | (x:rest) <- tails xs, y <- rest ]
+-- pairs xs ys = [ (x, y) | (x:rest) <- tails xs, y <- rest ]
 
 main = do
   input <- getInput "02"

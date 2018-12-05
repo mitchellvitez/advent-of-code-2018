@@ -1,8 +1,6 @@
 import Util
 
 import Data.Char
-import Data.List
-import Data.Ord
 import Data.Bits
 
 main = do
@@ -12,10 +10,11 @@ main = do
   let prereduced = reduce polymer
 
   print $ length prereduced -- *1
-  print . minimum $ map (createReduction prereduced) ['a'..'z'] -- *2
+  print . minimum $ map (createReduction prereduced) $ map ord ['a'..'z'] -- *2
 
 createReduction polymer c =
-  length . reduce $ filter ((/=c) . toLower) polymer
+  length . reduce $ filter (caseInsensNotEqual c) polymer
+  where caseInsensNotEqual a b = a /= ord b && a - 32 /= ord b
 
 reduce [] = []
 reduce (x:unreducedxs)

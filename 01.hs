@@ -13,6 +13,7 @@ firstDuplicate (x:xs) current seen =
   if current `IntSet.member` seen
   then current
   else firstDuplicate xs (current + x) (IntSet.insert current seen)
+firstDuplicate _ _ _ = error "no duplicate found"
 
 main = do
   input <- getInput "01"

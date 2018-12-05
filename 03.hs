@@ -4,12 +4,11 @@
 import Util
 import Data.Attoparsec.Text
 import Data.List
-import Data.Either (fromRight)
 import Data.IntMap.Strict (IntMap)
 import qualified Data.IntMap.Strict as IntMap
 import Data.IntSet (IntSet)
 import qualified Data.IntSet as IntSet
-import Data.Judy as J
+-- import Data.Judy as J
 
 data Claim = Claim
   { claimId :: Int
@@ -60,28 +59,29 @@ parseClaim = do
   return $ Claim claimId fromLeft fromTop width height
 
 
--- This version uses mutable data, but it turned out to be slower
-mutableVersion claims = do
-  mutGrid <- J.new :: IO (J.JudyL Int)
+-- -- This version uses mutable data, but it turned out to be slower
+--
+-- mutableVersion claims = do
+--   mutGrid <- J.new :: IO (J.JudyL Int)
 
-  fillupJ mutGrid claims
-  grid <- J.freeze mutGrid
-  g <- toList grid
-  let g2 = filter (\(a,b) -> b > 1) g
-  let (keys, values) = unzip g2
-  let overlapped = IntSet.fromList $ map fromIntegral keys
+--   fillupJ mutGrid claims
+--   grid <- J.freeze mutGrid
+--   g <- toList grid
+--   let g2 = filter (\(a,b) -> b > 1) g
+--   let (keys, values) = unzip g2
+--   let overlapped = IntSet.fromList $ map fromIntegral keys
 
-  print . length . filter (>1) $ values
-  print . claimId . head $ filter (noOverlap overlapped) claims
+--   print . length . filter (>1) $ values
+--   print . claimId . head $ filter (noOverlap overlapped) claims
 
-fillupJ :: J.JudyL Int -> [Claim] -> IO ()
-fillupJ grid claims =
-  mapM_ (claimAll grid) claims
+-- fillupJ :: J.JudyL Int -> [Claim] -> IO ()
+-- fillupJ grid claims =
+--   mapM_ (claimAll grid) claims
 
-claimAll :: J.JudyL Int -> Claim -> IO ()
-claimAll grid claim =
-  mapM_ (claimOne grid) (map fromIntegral (getIndices claim))
+-- claimAll :: J.JudyL Int -> Claim -> IO ()
+-- claimAll grid claim =
+--   mapM_ (claimOne grid) (map fromIntegral (getIndices claim))
 
-claimOne :: J.JudyL Int -> Int -> IO ()
-claimOne grid k = do
-  J.insertWith (+) (fromIntegral k) 1 grid
+-- claimOne :: J.JudyL Int -> Int -> IO ()
+-- claimOne grid k = do
+--   J.insertWith (+) (fromIntegral k) 1 grid

@@ -20,12 +20,15 @@ data Action = WakeUp | FallAsleep | BeginShift GuardId
 type GuardData = (Minute, [Minute])
 
 data Entry = Entry
-  { _key :: Int
+  { key :: Int
   , _minute :: Minute
   , _action :: Action
   }
-  deriving (Eq, Ord, Show)
+  deriving (Eq, Show)
 makeLenses ''Entry
+
+instance Ord Entry where
+  compare = comparing key
 
 data GuardInfo = GuardInfo
   { _currentGuard :: GuardId
@@ -62,16 +65,16 @@ countMinutes info entry =
       info & guardData .~ IntMap.insertWith
         (biliftA2 (+) (++))
         (info ^. currentGuard)
-        (min - asleep, [asleep..min-1])
+        (m - asleep, [asleep..m-1])
         (info ^. guardData)
       where
-        min = entry ^. minute
+        m = entry ^. minute
         asleep = info ^. asleepAt
 
 parseEntry :: Parser Entry
 parseEntry = do
   char '['
-  -- parse date to Int because sorting by comparing strings is slow
+  -- parse date to Int because sorting by comparing strings is slower
   y <- decimal <* char '-'
   m <- decimal <* char '-'
   d <- decimal <* char ' '
