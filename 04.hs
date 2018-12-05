@@ -1,11 +1,10 @@
 {-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE OverloadedStrings #-}
 
 import Util
 
 import Data.List
-import Data.Either (fromRight)
-import Text.ParserCombinators.Parsec as Parsec
-import Text.ParserCombinators.Parsec.Number (decimal)
+import Data.Attoparsec.Text
 import Data.IntMap.Strict (IntMap)
 import qualified Data.IntMap.Strict as IntMap
 import Data.Ord
@@ -36,9 +35,8 @@ data GuardInfo = GuardInfo
 makeLenses ''GuardInfo
 
 main = do
-  input <- Util.getParseInput "04"
+  entries <- Util.parseInput parseEntry "04"
 
-  let entries = sort . fromRight [] . (parse (many parseInput) "") $ input
   let defaultInfo = GuardInfo 0 0 IntMap.empty
   let minutes = IntMap.toList . view guardData $ foldl' countMinutes defaultInfo entries
 
@@ -70,8 +68,8 @@ countMinutes info entry =
         min = entry ^. minute
         asleep = info ^. asleepAt
 
-parseInput :: Parser Entry
-parseInput = do
+parseEntry :: Parser Entry
+parseEntry = do
   char '['
   -- parse date to Int because sorting by comparing strings is slow
   y <- decimal <* char '-'
@@ -83,11 +81,15 @@ parseInput = do
   return $ Entry (1000000*y + 10000*m + 100*d + h) minute info
 
 parseInfo :: Parser Action
-parseInfo = do
-      FallAsleep <$ string "falls asleep"
-  <|> WakeUp <$ string "wakes up"
-  <|> do 
-      string "Guard #"
-      guardId <- decimal
-      string " begins shift"
-      return $ BeginShift guardId
+parseInfo = choice 
+  [ FallAsleep <$ string "falls asleep"
+  , WakeUp <$ string "wakes up"
+  , BeginShift <$> parseGuard
+  ]
+
+parseGuard :: Parser Int
+parseGuard = do
+  string "Guard #"
+  guardId <- decimal
+  string " begins shift"
+  return guardId

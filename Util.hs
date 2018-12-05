@@ -1,14 +1,16 @@
 module Util where
 
 import Data.List (tails)
+import qualified Data.Text.IO as Text
+import Data.Text (Text)
+import Data.Either (fromRight)
+import Data.Attoparsec.Text
+import Data.Text (Text)
 
-pairs xs ys = [ (x, y) | (x:rest) <- tails xs, y <- rest ]
-
-getInput s = do
-  f <- readFile $ "input/" ++ s ++ ".txt"
+getInput day = do
+  f <- readFile $ "input/" ++ day ++ ".txt"
   return $ lines f
 
-getParseInput s =
-  readFile $ "input/" ++ s ++ ".txt"
-
-howManyTrue = length . filter (==True)
+parseInput parser day = do
+  input <- Text.readFile $ "input/" ++ day ++ ".txt"
+  return . fromRight [] $ parseOnly (many' parser) input

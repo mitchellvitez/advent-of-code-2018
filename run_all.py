@@ -8,7 +8,7 @@ for i in range(1, 26):
         os.system(f'ghc -O2 {i}')
 
 # Run
-total_start = time()
+total_time = 0
 for i in range(1, 26):
     i = str(i).zfill(2)
 
@@ -16,7 +16,9 @@ for i in range(1, 26):
         print(f'Day {i}')
         start = time()
         os.system(f'./{i}')
-        print('{0:.3f} seconds'.format(time() - start))
+        end = time()
+        total_time += end - start
+        print('{0:.3f} seconds'.format(end - start))
         print()
 
-print('{0:.3f} seconds total'.format(time() - total_start))
+print('{0:.3f} seconds total'.format(total_time))

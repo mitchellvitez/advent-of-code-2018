@@ -1,8 +1,8 @@
 {-# LANGUAGE TupleSections #-}
+{-# LANGUAGE OverloadedStrings #-}
 
 import Util
-import Text.ParserCombinators.Parsec
-import Text.ParserCombinators.Parsec.Number (decimal)
+import Data.Attoparsec.Text
 import Data.List
 import Data.Either (fromRight)
 import Data.IntMap.Strict (IntMap)
@@ -21,9 +21,8 @@ data Claim = Claim
   deriving Show
 
 main = do
-  input <- Util.getParseInput "03"
+  claims <- Util.parseInput parseClaim "03"
 
-  let claims = fromRight [] $ parse (many parseClaim) "" input
   let grid = IntMap.filter (>1) $ fillup IntMap.empty claims
   let overlapped = IntSet.fromList $ IntMap.keys grid
 
